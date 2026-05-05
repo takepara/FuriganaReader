@@ -1,39 +1,30 @@
-# JpTokenizer (Static Cloudflare Pages App)
+# Furigana Reader
 
-A fully static web app that:
+A fully static web app for learners of Japanese. Enter Japanese text and get a token-by-token breakdown with:
 
-1. Uses Google OAuth/OIDC in the browser (Google Identity Services)
-2. Calls Vertex AI Gemini from the client side using user-bound OAuth access tokens
-3. Produces strict token-by-token output in English:
-   - Japanese token
-   - Romaji
-   - Part of speech (English)
-   - Meaning (English)
+- Hiragana and romaji reading of the full input
+- Per-token: Japanese text, romaji, part of speech (English), and meaning (English)
+
+Powered by the Gemini API (Google AI Studio). No server-side code — everything runs in the browser.
 
 ## Files
 
 - `index.html`: UI shell
 - `styles.css`: visual design and responsive layout
-- `app.js`: OIDC auth, Gemini call, output parsing/rendering
-- `config.js`: local configuration values
+- `app.js`: API key management, Gemini API call, response parsing and rendering
+- `config.js`: configuration values (Gemini model ID)
 
 ## Setup
 
-1. Create an OAuth 2.0 Client ID (Web application) in Google Cloud.
-2. Add your local origin and Cloudflare Pages origin to Authorized JavaScript origins.
-3. Enable Vertex AI API in the same project.
-4. Edit `config.js`:
-   - `googleClientId`
-   - `googleCloudProjectId`
-   - `googleCloudLocation`
-   - `oauthScopes`
-   - `geminiModel`
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey).
+2. (Optional) Edit `config.js` to change the Gemini model:
+   - `geminiModel` — defaults to `gemini-2.5-flash-lite`
 
-The app sends requests to Vertex AI with the signed-in user's access token and includes the configured project as `x-goog-user-project` for quota and billing.
+The API key is entered in the UI at runtime and stored in `localStorage`. It is sent directly to `generativelanguage.googleapis.com` and never leaves your browser in any other way.
 
 ## Run locally
 
-Because this app loads scripts and calls OAuth endpoints, run with a local web server:
+Serve the files with any static web server, e.g.:
 
 ```bash
 python3 -m http.server 8080
@@ -47,10 +38,8 @@ Open: `http://localhost:8080`
 2. Create a Cloudflare Pages project from that repository.
 3. Build command: leave empty
 4. Build output directory: `/` (root)
-5. Set production domain in Google OAuth Authorized JavaScript origins.
 
-## Important Notes
+## Notes
 
-- This app intentionally has no server-side code and no Cloudflare Workers.
-- OAuth + Vertex AI behavior can vary depending on project policy and API scope configuration.
-- If OAuth token calls to Vertex AI fail due to policy/CORS/scope constraints, adjust scopes and project settings in Google Cloud.
+- No server-side code, no Cloudflare Workers, no tracking.
+- The API key is stored only in your browser's `localStorage` and is never sent anywhere except the Gemini API.
