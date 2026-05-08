@@ -104,16 +104,14 @@ h2 {
   color: var(--muted);
 }
 
-.privacy-notice {
-  margin-top: 12px;
-  max-width: 72ch;
-  font-size: 0.85rem;
+.privacy-footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 0.78rem;
   color: var(--muted);
-  background: rgba(20, 83, 45, 0.06);
-  border: 1px solid rgba(20, 83, 45, 0.18);
-  border-radius: 10px;
-  padding: 10px 14px;
-  line-height: 1.6;
+  padding: 14px 16px 28px;
+  opacity: 0.7;
 }
 
 .card {
