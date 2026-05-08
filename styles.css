@@ -1,13 +1,13 @@
 :root {
-  --bg: #f7f3e8;
-  --ink: #121212;
-  --muted: #5f5a52;
-  --surface: rgba(255, 255, 255, 0.83);
-  --border: rgba(18, 18, 18, 0.15);
-  --accent: #14532d;
-  --accent-2: #9a3412;
+  --bg: #faf6ef;
+  --ink: #2c2417;
+  --muted: #7a6a52;
+  --surface: rgba(255, 252, 245, 0.88);
+  --border: rgba(44, 36, 23, 0.13);
+  --accent: #5c4a2a;
+  --accent-2: #8a6c3e;
   --error: #b00020;
-  --shadow: 0 18px 40px rgba(18, 18, 18, 0.12);
+  --shadow: 0 18px 40px rgba(44, 36, 23, 0.10);
 }
 
 * {
@@ -23,10 +23,7 @@ body {
   margin: 0;
   min-height: 100%;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 20% 20%, #f4d58d 0%, rgba(244, 213, 141, 0) 34%),
-    radial-gradient(circle at 80% 0%, #cde7be 0%, rgba(205, 231, 190, 0) 34%),
-    linear-gradient(160deg, #f8f4ea 0%, #f1efe9 35%, #e7efe2 100%);
+  background: linear-gradient(160deg, #faf6ef 0%, #f2ead8 55%, #e8dfc8 100%);
   font-family: "Noto Sans JP", sans-serif;
 }
 
@@ -35,29 +32,7 @@ body {
   overflow-x: hidden;
 }
 
-.bg-shape {
-  position: fixed;
-  z-index: 0;
-  border-radius: 50%;
-  filter: blur(18px);
-  opacity: 0.45;
-}
 
-.bg-shape-a {
-  top: -90px;
-  right: -70px;
-  width: 280px;
-  height: 280px;
-  background: #86efac;
-}
-
-.bg-shape-b {
-  bottom: -110px;
-  left: -90px;
-  width: 320px;
-  height: 320px;
-  background: #fdba74;
-}
 
 .app-shell {
   position: relative;
@@ -155,7 +130,7 @@ h2 {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #166534 100%);
+  background: #b45309;
   color: #fff;
 }
 
