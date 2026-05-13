@@ -60,14 +60,15 @@ changeKeyBtn.addEventListener("click", function () {
 
 analyzeBtn.addEventListener("click", async function () {
   errorText.textContent = "";
-  const text = inputText.value.trim();
-  if (!text) { errorText.textContent = "Please enter some Japanese text."; return; }
+  const rawText = inputText.value;
+  const preparedInput = prepareInputForAnalysis(rawText);
+  if (!preparedInput.normalizedText) { errorText.textContent = "Please enter some Japanese text."; return; }
 
   loadingText.textContent = "Analyzing...";
   analyzeBtn.disabled = true;
 
   try {
-    const result = await analyzeText(text);
+    const result = await analyzeText(preparedInput);
     renderRows(result.rows);
     readingHiragana.textContent = result.hiragana_reading;
     readingRomaji.textContent   = result.romaji_reading;
@@ -90,10 +91,54 @@ function showMain() {
   show(mainSection);
 }
 
-async function analyzeText(text) {
-  const model = encodeURIComponent(cfg.geminiModel || "gemini-2.5-flash");
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+async function analyzeText(preparedInput) {
+  const modelCandidates = buildModelCandidates();
+  const retryLimit = Number.isInteger(cfg.retryLimit) ? cfg.retryLimit : 2;
+  let lastError = null;
 
+  for (const modelName of modelCandidates) {
+    for (let attempt = 0; attempt <= retryLimit; attempt++) {
+      try {
+        const data = await requestAnalyze(preparedInput, modelName);
+        const rows = data?.tokens;
+        if (!Array.isArray(rows) || rows.length === 0) throw new Error("Invalid response from API.");
+        return {
+          rows,
+          hiragana_reading: data.hiragana_reading || "",
+          romaji_reading:   data.romaji_reading || ""
+        };
+      } catch (err) {
+        lastError = err;
+        const retryable = isRetryableStatus(err?.status);
+        const hasNextTry = attempt < retryLimit;
+        if (retryable && hasNextTry) {
+          await waitMs(backoffMs(attempt));
+          continue;
+        }
+        if (!retryable) {
+          throw err;
+        }
+      }
+    }
+  }
+
+  if (isRetryableStatus(lastError?.status)) {
+    throw new Error("Gemini API is currently busy. Please try again in a few seconds.");
+  }
+  throw lastError || new Error("Failed to analyze text.");
+}
+
+function buildModelCandidates() {
+  const fromConfig = Array.isArray(cfg.fallbackModels) ? cfg.fallbackModels : [];
+  const candidates = [cfg.geminiModel, ...fromConfig, "gemini-2.5-flash-lite", "gemini-2.5-flash"]
+    .map(m => String(m || "").trim())
+    .filter(Boolean);
+  return [...new Set(candidates)];
+}
+
+async function requestAnalyze(text, modelName) {
+  const model = encodeURIComponent(modelName);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body = {
     contents: [{ role: "user", parts: [{ text: buildPrompt(text) }] }],
     generationConfig: {
@@ -130,40 +175,99 @@ async function analyzeText(text) {
 
   const raw = await resp.text();
   if (!resp.ok) {
-    let msg = `Error (${resp.status})`;
-    try {
-      const detail = JSON.parse(raw)?.error?.message || "";
-      if (detail) msg += ": " + detail.split("\n")[0];
-    } catch {}
-    throw new Error(msg);
+    const err = new Error(buildApiErrorMessage(resp.status, raw));
+    err.status = resp.status;
+    throw err;
   }
 
   const parsed = JSON.parse(raw)?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!parsed) throw new Error("Empty response from API.");
 
   const cleaned = parsed.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  const data = JSON.parse(cleaned);
-  const rows = data?.tokens;
-  if (!Array.isArray(rows) || rows.length === 0) throw new Error("Invalid response from API.");
-  return {
-    rows,
-    hiragana_reading: data.hiragana_reading || "",
-    romaji_reading:   data.romaji_reading || ""
-  };
+  return JSON.parse(cleaned);
+}
+
+function buildApiErrorMessage(status, raw) {
+  let msg = `Error (${status})`;
+  try {
+    const detail = JSON.parse(raw)?.error?.message || "";
+    if (detail) msg += ": " + detail.split("\n")[0];
+  } catch {}
+  return msg;
+}
+
+function isRetryableStatus(status) {
+  return [429, 500, 502, 503, 504].includes(Number(status));
+}
+
+function backoffMs(attempt) {
+  const base = 500;
+  return base * (2 ** attempt) + Math.floor(Math.random() * 250);
+}
+
+function waitMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function buildPrompt(inputText) {
+  const normalizedText = inputText?.normalizedText || "";
+  const originalText = inputText?.originalText || normalizedText;
+  const hasChoiceLikeSegments = Array.isArray(inputText?.choiceLikeSegments) && inputText.choiceLikeSegments.length > 0;
+  const advisoryLine = hasChoiceLikeSegments
+    ? `Detected parenthetical segments that may be option-like: ${inputText.choiceLikeSegments.join(" | ")}`
+    : "Detected parenthetical segments that may be option-like: none";
+
   return [
     "You are a Japanese tokenizer and lexical explainer.",
     "Output strictly as JSON matching the schema.",
     "Rules:",
-    "1) Segment the entire Japanese sentence into tokens with no omissions.",
+    "1) Segment the full Japanese input into tokens with no omissions.",
     "2) For each token provide: token (JP surface form), romaji (Hepburn), pos_en (part of speech in English), meaning_en (concise English meaning).",
-    "3) For hiragana_reading: write the full sentence in hiragana, inserting a single space at each natural pause point (between phrases/clauses, after particles that end a phrase, before and after verb groups). This is for a learner reading aloud smoothly.",
+    "3) Preserve all user-provided text. Do not drop or ignore parenthetical content unless it is literally empty.",
+    "4) For hiragana_reading: write the full sentence in hiragana, inserting a single space at each natural pause point (between phrases/clauses, after particles that end a phrase, before and after verb groups). This is for a learner reading aloud smoothly.",
     "4) For romaji_reading: same as hiragana_reading but in Hepburn romaji with the same spacing.",
-    "5) Do not include markdown, comments, or extra keys.",
-    "Input:", inputText
+    "5) Input may be all-hiragana with odd spacing from copy-paste. Infer natural word boundaries and intended lexical forms from context.",
+    "6) Parenthetical text can be semantically essential (e.g., conditions, concessions, clarifications). Include it in analysis by default.",
+    "7) Do not include markdown, comments, or extra keys.",
+    "Original user input:", originalText,
+    "Normalized full sentence:", normalizedText,
+    advisoryLine
   ].join("\n");
+}
+
+function normalizeJapaneseInput(value) {
+  return String(value)
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\s\u3000]+/g, "")
+    .trim();
+}
+
+function prepareInputForAnalysis(rawValue) {
+  const originalText = String(rawValue || "").trim();
+  const normalized = normalizeJapaneseInput(originalText);
+  if (!normalized) {
+    return { originalText, normalizedText: "", choiceLikeSegments: [] };
+  }
+
+  return {
+    originalText,
+    normalizedText: normalized,
+    choiceLikeSegments: detectChoiceLikeSegments(normalized)
+  };
+}
+
+function detectChoiceLikeSegments(text) {
+  const segments = [];
+  const matches = text.matchAll(/[（(]([^()（）]+)[)）]/g);
+  for (const m of matches) {
+    const inside = normalizeJapaneseInput(m[1] || "");
+    if (!inside) continue;
+    if (/[\/／|｜]/.test(inside)) {
+      segments.push(inside);
+    }
+  }
+  return segments;
 }
 
 function renderRows(rows) {
