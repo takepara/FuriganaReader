@@ -217,6 +217,12 @@ function buildPrompt(inputText) {
     ? `Detected parenthetical segments that may be option-like: ${choiceLikeSegments.map(s => s.raw).join(" | ")}`
     : "Detected parenthetical segments that may be option-like: none";
   const interpretationHints = Array.isArray(inputText?.interpretationHints) ? inputText.interpretationHints : [];
+  const nonSpokenSegments = Array.isArray(inputText?.nonSpokenParentheticalSegments)
+    ? inputText.nonSpokenParentheticalSegments
+    : [];
+  const nonSpokenLine = nonSpokenSegments.length > 0
+    ? `Non-spoken parenthetical candidates for reading sections: ${nonSpokenSegments.join(" | ")}`
+    : "Non-spoken parenthetical candidates for reading sections: none";
 
   return [
     "You are a Japanese tokenizer and lexical explainer.",
@@ -226,8 +232,9 @@ function buildPrompt(inputText) {
     "1a) Keep punctuation/symbols that appear in input (e.g., parentheses, slashes, ellipsis marks) represented in tokenization and reflected in readings.",
     "2) For each token provide: token (JP surface form), romaji (Hepburn), pos_en (part of speech in English), meaning_en (concise English meaning).",
     "3) Preserve all user-provided text. Do not drop or ignore parenthetical content unless it is literally empty.",
-    "4) For hiragana_reading: write the full sentence in hiragana, inserting a single space at each natural pause point (between phrases/clauses, after particles that end a phrase, before and after verb groups). This is for a learner reading aloud smoothly.",
+    "4) For hiragana_reading: produce a speakable reading string in hiragana with natural pause spacing.",
     "5) For romaji_reading: same as hiragana_reading but in Hepburn romaji with the same spacing.",
+    "5a) If non-spoken parenthetical candidates are provided, exclude those segments from hiragana_reading and romaji_reading only. Keep tokenization for the full original input.",
     "6) Input may be all-hiragana with odd spacing from copy-paste. Infer natural word boundaries and intended lexical forms from context.",
     "7) Parenthetical text can be semantically essential (e.g., conditions, concessions, clarifications). Include it in analysis by default.",
     "8) If parenthetical options are shorthand with ellipsis (e.g., とても〜/あまり〜/ぜんぜん), treat them as attaching to the nearest prior predicate/expression and explain that relation in natural English.",
@@ -237,6 +244,7 @@ function buildPrompt(inputText) {
     "Original user input:", originalText,
     "Normalized full sentence:", normalizedText,
     advisoryLine,
+    nonSpokenLine,
     "Interpretation hints:",
     ...interpretationHints
   ].join("\n");
@@ -262,7 +270,8 @@ function prepareInputForAnalysis(rawValue) {
     originalText,
     normalizedText: normalized,
     choiceLikeSegments: detectChoiceLikeSegments(normalized),
-    interpretationHints: buildInterpretationHints(normalized)
+    interpretationHints: buildInterpretationHints(normalized),
+    nonSpokenParentheticalSegments: detectNonSpokenParentheticalSegments(normalized)
   };
 }
 
@@ -313,6 +322,24 @@ function inferAttachmentAnchor(text) {
   if (!cleaned) return "";
   const maxLen = 12;
   return cleaned.slice(-maxLen);
+}
+
+function detectNonSpokenParentheticalSegments(text) {
+  const segments = [];
+  const matches = text.matchAll(/[（(]([^()（）]+)[)）]/g);
+  for (const m of matches) {
+    const inside = normalizeJapaneseInput(m[1] || "");
+    if (!inside) continue;
+
+    const hasAlternatives = /[\/／|｜]/.test(inside);
+    const hasEllipsis = /[〜…]/.test(inside);
+    const looksLikeOptionList = hasAlternatives && (hasEllipsis || inside.length <= 24);
+
+    if (looksLikeOptionList) {
+      segments.push(inside);
+    }
+  }
+  return segments;
 }
 
 function renderRows(rows) {
