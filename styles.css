@@ -82,11 +82,16 @@ h2 {
 .privacy-footer {
   position: relative;
   z-index: 1;
+  pointer-events: none;
   text-align: center;
   font-size: 0.78rem;
   color: var(--muted);
   padding: 14px 16px 28px;
   opacity: 0.7;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .card {
@@ -241,11 +246,12 @@ th {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.45);
-  z-index: 100;
+  z-index: 2147483646;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  isolation: isolate;
 }
 
 .modal-box {
@@ -257,6 +263,7 @@ th {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  z-index: 2147483647;
   box-shadow: 0 24px 60px rgba(0,0,0,0.22);
 }
 

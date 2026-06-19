@@ -3,6 +3,14 @@ const STORAGE_KEY = "jptokenizer_api_key";
 
 function show(el) { el.style.display = ""; }
 function hide(el) { el.style.display = "none"; }
+function openModal(el) {
+  show(el);
+  document.body.classList.add("modal-open");
+}
+function closeModal(el) {
+  hide(el);
+  document.body.classList.remove("modal-open");
+}
 
 const apiKeySection    = document.getElementById("apiKeySection");
 const apiKeyInput      = document.getElementById("apiKeyInput");
@@ -24,22 +32,26 @@ const howToGetKeyLink  = document.getElementById("howToGetKeyLink");
 const keyHelpClose     = document.getElementById("keyHelpClose");
 const keyHelpClose2    = document.getElementById("keyHelpClose2");
 
+if (keyHelpOverlay && keyHelpOverlay.parentElement !== document.body) {
+  document.body.appendChild(keyHelpOverlay);
+}
+
 howToGetKeyLink.addEventListener("click", function (e) {
   e.preventDefault();
   if (!apiKey) {
-    show(keyHelpOverlay);
+    openModal(keyHelpOverlay);
   }
 });
-keyHelpClose.addEventListener("click", function () { hide(keyHelpOverlay); });
-keyHelpClose2.addEventListener("click", function () { hide(keyHelpOverlay); });
+keyHelpClose.addEventListener("click", function () { closeModal(keyHelpOverlay); });
+keyHelpClose2.addEventListener("click", function () { closeModal(keyHelpOverlay); });
 keyHelpOverlay.addEventListener("click", function (e) {
-  if (e.target === keyHelpOverlay) hide(keyHelpOverlay);
+  if (e.target === keyHelpOverlay) closeModal(keyHelpOverlay);
 });
 
 let apiKey = localStorage.getItem(STORAGE_KEY) || "";
 
 if (apiKey) {
-  hide(keyHelpOverlay);
+  closeModal(keyHelpOverlay);
   showMain();
 } else {
   showKeyForm();
