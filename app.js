@@ -38,9 +38,7 @@ if (keyHelpOverlay && keyHelpOverlay.parentElement !== document.body) {
 
 howToGetKeyLink.addEventListener("click", function (e) {
   e.preventDefault();
-  if (!apiKey) {
-    openModal(keyHelpOverlay);
-  }
+  openModal(keyHelpOverlay);
 });
 keyHelpClose.addEventListener("click", function () { closeModal(keyHelpOverlay); });
 keyHelpClose2.addEventListener("click", function () { closeModal(keyHelpOverlay); });
@@ -51,7 +49,6 @@ keyHelpOverlay.addEventListener("click", function (e) {
 let apiKey = localStorage.getItem(STORAGE_KEY) || "";
 
 if (apiKey) {
-  closeModal(keyHelpOverlay);
   showMain();
 } else {
   showKeyForm();
