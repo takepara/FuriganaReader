@@ -18,6 +18,7 @@ const resultsBody      = document.getElementById("resultsBody");
 const readingSection   = document.getElementById("readingSection");
 const readingHiragana  = document.getElementById("readingHiragana");
 const readingRomaji    = document.getElementById("readingRomaji");
+const readingTranslated = document.getElementById("readingTranslated");
 const keyHelpOverlay   = document.getElementById("keyHelpOverlay");
 const howToGetKeyLink  = document.getElementById("howToGetKeyLink");
 const keyHelpClose     = document.getElementById("keyHelpClose");
@@ -72,6 +73,7 @@ analyzeBtn.addEventListener("click", async function () {
     renderRows(result.rows);
     readingHiragana.textContent = result.hiragana_reading;
     readingRomaji.textContent   = result.romaji_reading;
+    readingTranslated.textContent = result.translated || "";
     show(readingSection);
   } catch (e) {
     errorText.textContent = e.message;
@@ -105,7 +107,8 @@ async function analyzeText(preparedInput) {
         return {
           rows,
           hiragana_reading: data.hiragana_reading || "",
-          romaji_reading:   data.romaji_reading || ""
+          romaji_reading:   data.romaji_reading || "",
+          translated:       data.translated || ""
         };
       } catch (err) {
         lastError = err;
@@ -148,6 +151,7 @@ async function requestAnalyze(text, modelName) {
         properties: {
           hiragana_reading: { type: "STRING" },
           romaji_reading:   { type: "STRING" },
+          translated:       { type: "STRING" },
           tokens: {
             type: "ARRAY",
             items: {
@@ -162,7 +166,7 @@ async function requestAnalyze(text, modelName) {
             }
           }
         },
-        required: ["hiragana_reading", "romaji_reading", "tokens"]
+        required: ["hiragana_reading", "romaji_reading", "translated", "tokens"]
       }
     }
   };
@@ -235,6 +239,7 @@ function buildPrompt(inputText) {
     "4) For hiragana_reading: produce a speakable reading string in hiragana with natural pause spacing.",
     "5) For romaji_reading: same as hiragana_reading but in Hepburn romaji with the same spacing.",
     "5a) If non-spoken parenthetical candidates are provided, exclude those segments from hiragana_reading and romaji_reading only. Keep tokenization for the full original input.",
+    "5b) Also provide translated: a natural full-sentence English translation of the normalized full sentence.",
     "6) Input may be all-hiragana with odd spacing from copy-paste. Infer natural word boundaries and intended lexical forms from context.",
     "7) Parenthetical text can be semantically essential (e.g., conditions, concessions, clarifications). Include it in analysis by default.",
     "8) If parenthetical options are shorthand with ellipsis (e.g., とても〜/あまり〜/ぜんぜん), treat them as attaching to the nearest prior predicate/expression and explain that relation in natural English.",
