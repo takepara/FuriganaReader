@@ -103,6 +103,26 @@ body.modal-open {
   padding: 18px;
 }
 
+.input-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.input-header-row h2 {
+  margin: 0;
+}
+
+.change-key-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  line-height: 1.1;
+  padding: 6px 12px;
+}
+
 .auth-card {
   display: grid;
   gap: 12px;
@@ -334,6 +354,10 @@ th {
   .app-shell {
     width: min(980px, 94vw);
     margin-top: 16px;
+  }
+
+  .input-header-row {
+    flex-wrap: wrap;
   }
 
   .card {
