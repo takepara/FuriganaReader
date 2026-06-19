@@ -26,7 +26,9 @@ const keyHelpClose2    = document.getElementById("keyHelpClose2");
 
 howToGetKeyLink.addEventListener("click", function (e) {
   e.preventDefault();
-  show(keyHelpOverlay);
+  if (!apiKey) {
+    show(keyHelpOverlay);
+  }
 });
 keyHelpClose.addEventListener("click", function () { hide(keyHelpOverlay); });
 keyHelpClose2.addEventListener("click", function () { hide(keyHelpOverlay); });
@@ -37,6 +39,7 @@ keyHelpOverlay.addEventListener("click", function (e) {
 let apiKey = localStorage.getItem(STORAGE_KEY) || "";
 
 if (apiKey) {
+  hide(keyHelpOverlay);
   showMain();
 } else {
   showKeyForm();
