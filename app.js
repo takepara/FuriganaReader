@@ -4,11 +4,14 @@ const STORAGE_KEY = "jptokenizer_api_key";
 function show(el) { el.style.display = ""; }
 function hide(el) { el.style.display = "none"; }
 function openModal(el) {
-  show(el);
+  if (!el) return;
+  // Override stylesheet-level display: none !important for deterministic modal control.
+  el.style.setProperty("display", "flex", "important");
   document.body.classList.add("modal-open");
 }
 function closeModal(el) {
-  hide(el);
+  if (!el) return;
+  el.style.setProperty("display", "none", "important");
   document.body.classList.remove("modal-open");
 }
 
