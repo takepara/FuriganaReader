@@ -254,6 +254,10 @@ th {
   isolation: isolate;
 }
 
+#keyHelpOverlay {
+  display: none !important;
+}
+
 .modal-box {
   background: #fff;
   border-radius: 18px;

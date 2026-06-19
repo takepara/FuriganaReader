@@ -32,19 +32,31 @@ const howToGetKeyLink  = document.getElementById("howToGetKeyLink");
 const keyHelpClose     = document.getElementById("keyHelpClose");
 const keyHelpClose2    = document.getElementById("keyHelpClose2");
 
+if (keyHelpOverlay) {
+  closeModal(keyHelpOverlay);
+}
+
 if (keyHelpOverlay && keyHelpOverlay.parentElement !== document.body) {
   document.body.appendChild(keyHelpOverlay);
 }
 
-howToGetKeyLink.addEventListener("click", function (e) {
-  e.preventDefault();
-  openModal(keyHelpOverlay);
-});
-keyHelpClose.addEventListener("click", function () { closeModal(keyHelpOverlay); });
-keyHelpClose2.addEventListener("click", function () { closeModal(keyHelpOverlay); });
-keyHelpOverlay.addEventListener("click", function (e) {
-  if (e.target === keyHelpOverlay) closeModal(keyHelpOverlay);
-});
+if (howToGetKeyLink && keyHelpOverlay) {
+  howToGetKeyLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    openModal(keyHelpOverlay);
+  });
+}
+if (keyHelpClose && keyHelpOverlay) {
+  keyHelpClose.addEventListener("click", function () { closeModal(keyHelpOverlay); });
+}
+if (keyHelpClose2 && keyHelpOverlay) {
+  keyHelpClose2.addEventListener("click", function () { closeModal(keyHelpOverlay); });
+}
+if (keyHelpOverlay) {
+  keyHelpOverlay.addEventListener("click", function (e) {
+    if (e.target === keyHelpOverlay) closeModal(keyHelpOverlay);
+  });
+}
 
 let apiKey = localStorage.getItem(STORAGE_KEY) || "";
 
